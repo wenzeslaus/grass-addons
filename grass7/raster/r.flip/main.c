@@ -66,11 +66,10 @@ int main(int argc, char *argv[])
     flag2->key = 'b';
     flag2->description = _("Both N-S and E-W flip");
 
+    G_option_exclusive(flag1, flag2, NULL);
+
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-    if (flag1->answer && flag2->answer)
-	G_fatal_error(_("-w and -b are mutually exclusive"));
 
     in = input->answer;
     out = output->answer;
