@@ -1,23 +1,23 @@
+/************************************************************************
+ *
+ * MODULE:    r.flip
+ * AUTHOR(S): Yann Chemin - yann.chemin@gmail.com
+ * PURPOSE:   Flips an image North-South, East-West (-w) or both (-b).
+ *
+ * COPYRIGHT: (C) 2012-2020 by Yann Chemin and the GRASS Development Team
+ *
+ *            This program is free software under the GNU General Public
+ *            License (>=v2). Read the file COPYING that comes with
+ *            GRASS for details.
+ *
+ ***********************************************************************/
 
-/****************************************************************************
- *
- * MODULE:       r.flip
- * AUTHOR(S):    Yann Chemin - yann.chemin@gmail.com
- * PURPOSE:      Flips an image North-South, East-West (-w) or both (-b).
- *
- * COPYRIGHT:    (C) 2012 by the GRASS Development Team
- *
- *               This program is free software under the GNU General Public
- *   	    	 License (>=v2). Read the file COPYING that comes with GRASS
- *   	    	 for details.
- *
- * Remark:
- *		 Initial need for TRMM import
- *
- * Changelog:	 
- *		 Moved from i.flip to r.flip
- *
- *****************************************************************************/
+/*
+ * Changelog:
+ * Moved from i.flip to r.flip
+ * Fixed and improved keywords and documentation
+ */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,10 +43,15 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    G_add_keyword(_("imagery"));
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("transformation"));
     G_add_keyword(_("flip"));
-    module->label = _("Flips an image.");
-    module->description = _("Flips an image.");
+    G_add_keyword(_("mirror"));
+    G_add_keyword(_("reverse"));
+    G_add_keyword(_("reorient"));
+    module->label = _("Flips a raster map");
+    module->description = _(
+	"Flip a raster map along the vertical or horizontal axis");
 
     /* Define the different options */
     input = G_define_standard_option(G_OPT_R_INPUT);

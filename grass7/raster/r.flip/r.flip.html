@@ -1,20 +1,41 @@
 <h2>DESCRIPTION</h2>
 
-<em>r.flip</em>Flips an image North-South. Initial need was for TRMM images. 
+<b><em>r.flip</em></b> - Flip a raster map along the vertical or
+horizontal axis placed in the center of the computational region.
+The default flip is North-South which swaps positions along the
+horizontal axis. East-West flip can be done using
+<b>-w</b> flag which swaps along the vertical axis.
+A combined North-South and East-West flip can be done
+using <b>-b</b> flag.
 
+<p>
+Region versus raster...
+
+<p>
+Diagonal flip...
+
+<p>
+NULL values???
+
+<p>
+Possible uses include in remote sensing for processing imagery data
+where cells positions need to georeferenced (or corrected) manually.
 
 <h2>NOTES</h2>
 
-Added flags for East-West flip (w) and both N-S and E-W (b).
+Initial need for this module was for the import of
+the Tropical Rainfall Measuring Mission (TRMM) images.
+The original name was <em>i.flip</em>.
 
 <h2>SEE ALSO</h2>
 
-<em>
-<a href="https://grass.osgeo.org/grass-stable/manuals/i.atcorr.html">i.atcorr</a>
-</em>
+<em><a href="https://grass.osgeo.org/grass-stable/manuals/r.region.html">r.region</a></em>
+for manual setting of a raster map extent,<br>
+<em><a href="https://grass.osgeo.org/grass-stable/manuals/i.atcorr.html">i.atcorr</a></em>
+for an atmospheric correction algorithm
 
 
-<h2>AUTHORS</h2>
+<h2>AUTHOR</h2>
 Yann Chemin, International Water Management Institute, Sri Lanka
 
 <!--
