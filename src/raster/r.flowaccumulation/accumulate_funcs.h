@@ -211,86 +211,86 @@ static void trace_down(struct raster_map *dir_map,
                        struct raster_map *accum_map, int row, int col,
                        ACCUM_TYPE accum)
 {
-    int up;
-    ACCUM_TYPE accum_up = 0;
+    do {
+        int up;
+        ACCUM_TYPE accum_up = 0;
 
 #ifdef CHECK_OVERFLOW
-    if (
+        if (
 #if ACCUM_RAST_TYPE == CELL_TYPE
-        Rast_is_c_null_value(&accum) || accum <= 0
+            Rast_is_c_null_value(&accum) || accum <= 0
 #else
-        isinf(accum)
+            isinf(accum)
 #endif
-    )
-        G_fatal_error(
+        )
+            G_fatal_error(
 #if ACCUM_RAST_TYPE == CELL_TYPE
-            _("Flow accumulation is too large. Try FCELL or DCELL type.")
+                _("Flow accumulation is too large. Try FCELL or DCELL type.")
 #elif ACCUM_RAST_TYPE == FCELL_TYPE
-            _("Flow accumulation is too large. Try DCELL type.")
+                _("Flow accumulation is too large. Try DCELL type.")
 #else
-            _("Flow accumulation is too large.")
+                _("Flow accumulation is too large.")
 #endif
-        );
+            );
 #endif
 
-    /* accumulate the current cell itself */
-    ACCUM(row, col) = accum;
+        /* accumulate the current cell itself */
+        ACCUM(row, col) = accum;
 
-    /* find the downstream cell */
-    switch (DIR(row, col)) {
-    case NW:
-        row--;
-        col--;
-        break;
-    case N:
-        row--;
-        break;
-    case NE:
-        row--;
-        col++;
-        break;
-    case W:
-        col--;
-        break;
-    case E:
-        col++;
-        break;
-    case SW:
-        row++;
-        col--;
-        break;
-    case S:
-        row++;
-        break;
-    case SE:
-        row++;
-        col++;
-        break;
-    }
+        /* find the downstream cell */
+        switch (DIR(row, col)) {
+        case NW:
+            row--;
+            col--;
+            break;
+        case N:
+            row--;
+            break;
+        case NE:
+            row--;
+            col++;
+            break;
+        case W:
+            col--;
+            break;
+        case E:
+            col++;
+            break;
+        case SW:
+            row++;
+            col--;
+            break;
+        case S:
+            row++;
+            break;
+        case SE:
+            row++;
+            col++;
+            break;
+        default:
+            /* invalid direction; stop tracing down */
+            return;
+        }
 
-    /* if the downstream cell is null or any upstream cells of the downstream
-     * cell have never been visited, stop tracing down */
-    if (row < 0 || row >= nrows || col < 0 || col >= ncols || !DIR(row, col) ||
-        !(up = UP(row, col))
+        /* if the downstream cell is null or any upstream cells of the
+         * downstream cell have never been visited, stop tracing down */
+        if (row < 0 || row >= nrows || col < 0 || col >= ncols ||
+            !DIR(row, col) || !(up = UP(row, col))
 #ifndef USE_WEIGHT
-        || (accum_up = sum_up(accum_map, row, col, up)) == accum_not_ready
+            || (accum_up = sum_up(accum_map, row, col, up)) == accum_not_ready
 #endif
-    )
-        return;
+        )
+            return;
 
 #ifdef USE_WEIGHT
-    accum_up = sum_up(accum_map, row, col, up);
-    if (IS_ACCUM_NULL(&accum_up) || IS_WEIGHT_NULL(row, col))
-        return;
+        accum_up = sum_up(accum_map, row, col, up);
+        if (IS_ACCUM_NULL(&accum_up) || IS_WEIGHT_NULL(row, col))
+            return;
 #endif
 
-    /* use gcc -O2 or -O3 flags for tail-call optimization
-     * (-foptimize-sibling-calls) */
-    trace_down(dir_map,
-#ifdef USE_WEIGHT
-               weight_map,
-#endif
-               accum_map, row, col, accum_up + WEIGHT(row, col));
+        /* continue with the downstream cell */
+        accum = accum_up + WEIGHT(row, col);
+    } while (1);
 }
 
 /* if any upstream cells have never been visited, 0 is returned; otherwise, the

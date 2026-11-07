@@ -38,9 +38,10 @@ def session(tmp_path_factory):
     converging_power2 have the same directions in different formats.
     In east_45degree and east_degree, all cells point East, with negative
     values in the east edge column as in r.watershed. In east_null, all
-    cells point East except for null cells in column 4. The weight raster
-    col_weight is the column number, null_weight is the same with null
-    cells in column 4.
+    cells point East except for null cells in column 4. In
+    east_invalid_power2, all cells point East except for an invalid code
+    in column 4. The weight raster col_weight is the column number,
+    null_weight is the same with null cells in column 4.
     """
     project = tmp_path_factory.mktemp("r_flowaccumulation") / "project"
     gs.create_project(project)
@@ -57,6 +58,32 @@ def session(tmp_path_factory):
             tools.r_mapcalc(expression="east_45degree = if(col() == 7, -8, 8)")
             tools.r_mapcalc(expression="east_degree = if(col() == 7, -360, 360)")
             tools.r_mapcalc(expression="east_null = if(col() == 4, null(), 8)")
+            # Power2 code 3 is not a valid direction.
+            tools.r_mapcalc(expression="east_invalid_power2 = if(col() == 4, 3, 1)")
             tools.r_mapcalc(expression="col_weight = col()")
             tools.r_mapcalc(expression="null_weight = if(col() == 4, null(), col())")
+            yield session
+
+
+@pytest.fixture(scope="module")
+def long_path_session(tmp_path_factory):
+    """Session in a 660x660 XY project with a single long flow path.
+
+    In long_path_45degree, odd rows flow East and even rows flow West, and
+    the cells at the end of each row flow South, so the path snakes through
+    all cells, row by row, and leaves the region at the south-west corner.
+    """
+    project = tmp_path_factory.mktemp("r_flowaccumulation_long_path") / "project"
+    gs.create_project(project)
+    with gs.setup.init(project, env=os.environ.copy()) as session:
+        with Tools(session=session) as tools:
+            # Long enough to overflow the stack if tracing recurses once per cell.
+            size = 660
+            tools.g_region(n=size, s=0, e=size, w=0, res=1)
+            tools.r_mapcalc(
+                expression=(
+                    "long_path_45degree = "
+                    f"if(row() % 2, if(col() == {size}, 6, 8), if(col() == 1, 6, 4))"
+                )
+            )
             yield session

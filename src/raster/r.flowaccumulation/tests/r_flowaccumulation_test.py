@@ -28,6 +28,13 @@ def read_with_nulls(session, name):
     return garray.array(name, null="nan", dtype=np.float64, env=session.env)
 
 
+def long_path_order(size):
+    """Position of each cell along the path of long_path_45degree, starting at 0"""
+    order = np.arange(size * size).reshape(size, size)
+    order[1::2] = order[1::2, ::-1]
+    return order
+
+
 @pytest.mark.parametrize(
     ("direction_format", "suffix", "flags", "accumulation_type"),
     [
@@ -105,3 +112,25 @@ def test_weight(session, weight, flags, expected_row):
     )
     accumulation = read_with_nulls(session, "accumulation")
     np.testing.assert_array_equal(accumulation, [expected_row] * 5)
+
+
+@pytest.mark.parametrize("flags", ["", "m"])
+def test_invalid_direction(session, flags):
+    """An invalid direction code ends the flow path
+
+    Current implementation, not documented.
+    """
+    tools = Tools(session=session)
+    accumulation = tools.r_flowaccumulation(
+        direction="east_invalid_power2", format="power2", flags=flags, output=np.array
+    )
+    np.testing.assert_array_equal(accumulation, [[1, 2, 3, 4, 1, 2, 3]] * 5)
+
+
+def test_long_flow_path(long_path_session):
+    """Accumulation along a single long flow path counts the cells on it"""
+    tools = Tools(session=long_path_session)
+    accumulation = tools.r_flowaccumulation(
+        direction="long_path_45degree", format="45degree", output=np.array
+    )
+    np.testing.assert_array_equal(accumulation, long_path_order(len(accumulation)) + 1)
