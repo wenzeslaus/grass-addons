@@ -41,6 +41,8 @@ def session(tmp_path_factory):
     values in the east edge column as in r.watershed. In east_zero_45degree,
     east_zero_degree, and east_30_degree, all cells point East except for
     column 4, which has a value meaning no direction (0, 0, and 30).
+    In too_low_degree and too_low_45degree, the west edge column is below
+    the valid range of the format.
 
     The outlets of converging_outlets are the west edge (category 1) and
     east edge (category 2) cells of row 3, those of east_outlets are the
@@ -65,6 +67,8 @@ def session(tmp_path_factory):
             tools.r_mapcalc(expression="east_zero_45degree = if(col() == 4, 0, 8)")
             tools.r_mapcalc(expression="east_zero_degree = if(col() == 4, 0, 360)")
             tools.r_mapcalc(expression="east_30_degree = if(col() == 4, 30, 360)")
+            tools.r_mapcalc(expression="too_low_degree = if(col() == 1, -405, 360)")
+            tools.r_mapcalc(expression="too_low_45degree = if(col() == 1, -9, 8)")
             tools.v_in_ascii(
                 input=StringIO("0.5|2.5\n6.5|2.5\n"), output="converging_outlets"
             )

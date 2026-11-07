@@ -4,7 +4,6 @@ project(r.hydrobasin)
 include(build_addon)
 
 find_OpenMP()
-find_M()
 
 set(sources
     delineate_funcs.h
@@ -33,8 +32,6 @@ build_addon(
     gis
     raster
     vector
-  DEPENDS
-    LIBM
   OPTIONAL_DEPENDS
     OpenMP::OpenMP_C
   SOURCES ${sources}
