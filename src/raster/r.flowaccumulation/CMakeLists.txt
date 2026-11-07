@@ -4,8 +4,6 @@ project(r.flowaccumulation)
 
 include(build_addon)
 
-find_M()
-
 set(sources
     accumulate_c.c
     accumulate_cm.c
@@ -54,6 +52,5 @@ set(doc_files
 build_addon(
   ${PROJECT_NAME}
   GRASSLIBS gis raster
-  DEPENDS LIBM
   SOURCES ${sources}
   DOCFILES ${doc_files})
