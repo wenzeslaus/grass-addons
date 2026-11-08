@@ -8,7 +8,7 @@ import re
 
 import pytest
 
-from grass.tools import Tools
+from grass.tools import ToolError, Tools
 
 # Several threads give wrong paths in debug builds because of a data race
 # (shared inner loop counter in lfp_funcs.h).
@@ -121,3 +121,44 @@ def test_no_direction(session, direction_format, direction):
         nprocs=NPROCS,
     )
     assert flow_paths(tools, "lfp") == [((4.5, 2.5), (5.5, 2.5), (6.5, 2.5))]
+
+
+@pytest.mark.parametrize(
+    ("direction_format", "direction", "message"),
+    [
+        ("degree", "too_low_degree", "degrees cannot be < -360 or > 360"),
+        ("auto", "too_low_degree", "degrees cannot be < -360 or > 360"),
+        ("degree", "too_high_degree", "degrees cannot be < -360 or > 360"),
+        ("45degree", "too_low_45degree", "divided by 45 cannot be < -8 or > 8"),
+        ("auto", "too_low_45degree", "divided by 45 cannot be < -8 or > 8"),
+        ("45degree", "too_high_45degree", "divided by 45 cannot be < -8 or > 8"),
+    ],
+)
+def test_out_of_range(session, direction_format, direction, message):
+    """Directions outside the valid range of the format are rejected"""
+    tools = Tools(session=session, overwrite=True)
+    with pytest.raises(ToolError, match=message):
+        tools.r_lfp(
+            direction=direction,
+            format=direction_format,
+            outlets="east_outlet",
+            lfp="lfp",
+            nprocs=NPROCS,
+        )
+
+
+@pytest.mark.parametrize("direction_format", ["degree", "45degree"])
+def test_all_null(session, direction_format):
+    """All-null directions give a flow path of only the outlet
+
+    The single-vertex path is the current implementation, not documented.
+    """
+    tools = Tools(session=session, overwrite=True)
+    tools.r_lfp(
+        direction="all_null",
+        format=direction_format,
+        outlets="east_outlet",
+        lfp="lfp",
+        nprocs=NPROCS,
+    )
+    assert flow_paths(tools, "lfp") == [((6.5, 2.5),)]

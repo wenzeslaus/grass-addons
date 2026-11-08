@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <grass/gis.h>
 #include <grass/raster.h>
 #include <grass/glocale.h>
@@ -69,6 +68,15 @@ struct raster_map *read_direction(char *dir_name, char *format, char *encoding)
                     &dir_encoding[7]) != 8)
         G_fatal_error(_("%s: Invalid direction encoding"), encoding);
 
+    /* an all-null map has a null range */
+    if (!Rast_is_c_null_value(&dir_min)) {
+        if (dir_format == DIR_DEG && (dir_min < -360 || dir_max > 360))
+            G_fatal_error(_("Directional degrees cannot be < -360 or > 360"));
+        if (dir_format == DIR_45DEG && (dir_min < -8 || dir_max > 8))
+            G_fatal_error(
+                _("Directional degrees divided by 45 cannot be < -8 or > 8"));
+    }
+
     nrows = Rast_window_rows();
     ncols = Rast_window_cols();
 
@@ -87,13 +95,13 @@ struct raster_map *read_direction(char *dir_name, char *format, char *encoding)
                 if (!Rast_is_c_null_value(&dir_buf[col]))
                     DIR(row, col) = abs(dir_buf[col]) < 45
                                         ? 0
-                                        : pow(2, 8 - abs(dir_buf[col]) / 45);
+                                        : 1 << (8 - abs(dir_buf[col]) / 45);
             break;
         case DIR_45DEG:
             for (col = 0; col < ncols; col++)
                 if (!Rast_is_c_null_value(&dir_buf[col]))
                     DIR(row, col) =
-                        dir_buf[col] ? pow(2, 8 - abs(dir_buf[col])) : 0;
+                        dir_buf[col] ? 1 << (8 - abs(dir_buf[col])) : 0;
             break;
         case DIR_POW2:
             for (col = 0; col < ncols; col++)
