@@ -9,10 +9,11 @@ by Cho (2025).
 
 *r.lfp* can automatically recognize the following three different
 formats of flow directions: **degree**, **45degree**, and **power2**.
-The **degree** format starts just above 0° at East (excluding 0° itself)
-and goes counterclockwise up to 360°, which also corresponds to East.
-The **45degree** format divides the degree format by 45°. The **power2**
-format starts from 1 at East and doubles clockwise up to Northeast.
+The **degree** format goes counterclockwise from 45° at Northeast up to
+360° at East. The **45degree** format divides the degree format by 45°.
+The **power2** format starts from 1 at East and doubles clockwise up to
+Northeast. A **degree** value below 45 in absolute value (e.g., 0) or a
+**45degree** value of 0 means no flow direction.
 
 ![image-alt](r_lfp_formats.png)
 
