@@ -38,7 +38,8 @@ def session(tmp_path_factory):
     and converging_taudem have the same directions in different formats.
     In east_45degree and east_degree, all cells point East, with negative
     values in the east edge column as in r.watershed. In east_null, all
-    cells point East except for null cells in column 4.
+    cells point East except for null cells in column 4. In east_cycle,
+    columns 4 and 5 point at each other and all other cells point East.
     """
     project = tmp_path_factory.mktemp("r_upflowlength") / "project"
     gs.create_project(project)
@@ -58,4 +59,5 @@ def session(tmp_path_factory):
             tools.r_mapcalc(expression="east_45degree = if(col() == 7, -8, 8)")
             tools.r_mapcalc(expression="east_degree = if(col() == 7, -360, 360)")
             tools.r_mapcalc(expression="east_null = if(col() == 4, null(), 8)")
+            tools.r_mapcalc(expression="east_cycle = if(col() == 5, 4, 8)")
             yield session
