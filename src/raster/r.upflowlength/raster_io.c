@@ -150,10 +150,13 @@ void nullify_raster_map(struct raster_map *rast_map)
 {
     int nrows = rast_map->nrows, ncols = rast_map->ncols, row, col;
 
+    /* null cells equal null_value, cells never visited (e.g., in flow loops)
+     * still hold their negative encoded directions below it, and flow lengths
+     * are >= 0 */
 #pragma omp parallel for schedule(dynamic) private(col)
     for (row = 0; row < nrows; row++) {
         for (col = 0; col < ncols; col++)
-            if (FLEN(row, col) == rast_map->null_value)
+            if (FLEN(row, col) <= rast_map->null_value)
                 Rast_set_null_value(&FLEN(row, col), 1, rast_map->type);
     }
 }

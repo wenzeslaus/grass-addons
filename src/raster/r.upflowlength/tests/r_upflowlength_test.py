@@ -73,3 +73,11 @@ def test_null(session):
     tools.r_upflowlength(input="east_null", format="45degree", output="length")
     length = read_with_nulls(session, "length")
     np.testing.assert_array_equal(length, [[0, 10, 20, np.nan, 0, 10, 20]] * 5)
+
+
+def test_cycle(session):
+    """Cells in a flow loop are null and cells draining into it keep their flow length"""
+    tools = Tools(session=session)
+    tools.r_upflowlength(input="east_cycle", format="45degree", output="cycle")
+    length = read_with_nulls(session, "cycle")
+    np.testing.assert_array_equal(length, [[0, 10, 20, np.nan, np.nan, 0, 10]] * 5)

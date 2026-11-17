@@ -29,6 +29,8 @@ When parallel processing is enabled with the **nprocs** option,
 *r.upflowlength* uses OpenMP's shared-memory model and the specified number of
 threads to parallelize the computation.
 
+Cells in flow loops, which have no outlet, are null in the output.
+
 ## EXAMPLES
 
 These examples use the North Carolina sample dataset.
