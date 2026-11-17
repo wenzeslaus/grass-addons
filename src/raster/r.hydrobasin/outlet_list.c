@@ -32,7 +32,7 @@ void free_outlet_list(struct outlet_list *ol)
 }
 
 /* adapted from r.path */
-void add_outlet(struct outlet_list *ol, double x, double y, int id)
+void add_outlet(struct outlet_list *ol, int row, int col, int id)
 {
     if (ol->n == ol->nalloc) {
         ol->nalloc += REALLOC_INCREMENT;
@@ -42,8 +42,8 @@ void add_outlet(struct outlet_list *ol, double x, double y, int id)
         if (!ol->row || !ol->col || !ol->id)
             G_fatal_error(_("Unable to increase outlet list"));
     }
-    ol->row[ol->n] = (int)Rast_northing_to_row(y, &window);
-    ol->col[ol->n] = (int)Rast_easting_to_col(x, &window);
+    ol->row[ol->n] = row;
+    ol->col[ol->n] = col;
     ol->id[ol->n] = id;
     ol->n++;
 }
@@ -83,6 +83,7 @@ struct outlet_list *read_outlets(char *outlets_name, char *layer, char *idcol)
 
     for (line = 1; line <= nlines; line++) {
         int ltype, cat, id;
+        double row, col;
 
         G_percent(line, nlines, 1);
 
@@ -91,6 +92,17 @@ struct outlet_list *read_outlets(char *outlets_name, char *layer, char *idcol)
 
         if (ltype != GV_POINT || cat < 0)
             continue;
+
+        row = Rast_northing_to_row(Points->y[0], &window);
+        col = Rast_easting_to_col(Points->x[0], &window);
+
+        /* if the outlet is outside the computational region, skip */
+        if (row < 0 || row >= window.rows || col < 0 || col >= window.cols) {
+            G_warning(_("Skip outlet (cat %d) at (%f, %f) outside the current "
+                        "region"),
+                      cat, Points->x[0], Points->y[0]);
+            continue;
+        }
 
         if (driver) {
             dbValue val;
@@ -106,7 +118,7 @@ struct outlet_list *read_outlets(char *outlets_name, char *layer, char *idcol)
         else
             id = cat;
 
-        add_outlet(outlets_l, Points->x[0], Points->y[0], id);
+        add_outlet(outlets_l, (int)row, (int)col, id);
     }
 
     if (driver)

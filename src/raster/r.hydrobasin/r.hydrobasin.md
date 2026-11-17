@@ -9,6 +9,7 @@ algorithm by Cho (2025).
 
 *r.hydrobasin* uses a flow direction raster map and an outlets vector
 map to delineate a large number of watersheds in parallel using OpenMP.
+Outlets outside the computational region are skipped with a warning.
 
 The module recognizes three different formats of flow directions:
 

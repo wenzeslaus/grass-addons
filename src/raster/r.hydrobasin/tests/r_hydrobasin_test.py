@@ -4,6 +4,8 @@ SPDX-FileCopyrightText: 2026 Vaclav Petras
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 
+from io import StringIO
+
 import numpy as np
 import pytest
 
@@ -81,3 +83,33 @@ def test_nested_outlets(session, column, upstream_id, downstream_id):
     expected = np.full((5, 7), N)
     expected[2] = [upstream_id] * 4 + [downstream_id] * 3
     np.testing.assert_array_equal(watersheds, expected)
+
+
+def test_outlets_outside_region(session):
+    """Outlets outside the region are skipped with a warning
+
+    The outlets of converging_outlets are used with the first one moved to
+    the west edge, which is inside the region, and followed by outlets
+    outside the region (categories 3 to 7).
+    """
+    tools = Tools(session=session, consistent_return_value=True)
+    points = [
+        "0|2.5",  # on the west edge
+        "6.5|2.5",
+        "3.5|5.5",  # just north
+        "-0.5|2.5",  # just west
+        "7|2.5",  # on the east edge
+        "3.5|0",  # on the south edge
+        "100.5|100.5",  # far outside
+    ]
+    tools.v_in_ascii(input=StringIO("\n".join(points)), output="outside_outlets")
+    result = tools.r_hydrobasin(
+        direction="converging_45degree",
+        format="45degree",
+        outlets="outside_outlets",
+        output=np.array,
+    )
+    np.testing.assert_array_equal(result.arrays.output, [[1, 1, 1, 2, 2, 2, 2]] * 5)
+    assert "Skip outlet (cat 1)" not in result.stderr
+    for cat in range(3, 8):
+        assert f"Skip outlet (cat {cat}) at" in result.stderr
