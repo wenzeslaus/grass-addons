@@ -13,15 +13,10 @@ from grass.tools import Tools
 # Several threads give wrong paths in debug builds because of a data race
 # (shared inner loop counter in lfp_funcs.h).
 NPROCS = 1
-MIRRORED_DEGREE = pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="degree format directions are converted incorrectly",
-)
 FORMATS = [
     ("45degree", "45degree"),
-    pytest.param("degree", "degree", marks=MIRRORED_DEGREE),
-    pytest.param("auto", "degree", marks=MIRRORED_DEGREE),
+    ("degree", "degree"),
+    ("auto", "degree"),
 ]
 # Each outlet of converging_outlets has two equally long paths, one from the
 # north edge and one from the south edge.
@@ -106,12 +101,21 @@ def test_east(session, direction_format, suffix):
     assert flow_paths(tools, "lfp") == [tuple((x + 0.5, 2.5) for x in range(7))]
 
 
-def test_null(session):
-    """Null directions break the flow path"""
+@pytest.mark.parametrize(
+    ("direction_format", "direction"),
+    [
+        ("45degree", "east_null"),
+        ("45degree", "east_zero_45degree"),
+        ("degree", "east_zero_degree"),
+        ("degree", "east_30_degree"),
+    ],
+)
+def test_no_direction(session, direction_format, direction):
+    """Cells without a direction break the flow path"""
     tools = Tools(session=session, overwrite=True)
     tools.r_lfp(
-        direction="east_null",
-        format="45degree",
+        direction=direction,
+        format=direction_format,
         outlets="east_outlet",
         lfp="lfp",
         nprocs=NPROCS,

@@ -10,16 +10,11 @@ import pytest
 import grass.script.array as garray
 from grass.tools import Tools
 
-MIRRORED_DEGREE = pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="degree format directions are converted incorrectly",
-)
 FORMATS = [
     ("45degree", "45degree"),
     ("auto", "45degree"),
-    pytest.param("degree", "degree", marks=MIRRORED_DEGREE),
-    pytest.param("auto", "degree", marks=MIRRORED_DEGREE),
+    ("degree", "degree"),
+    ("auto", "degree"),
 ]
 
 
@@ -67,9 +62,22 @@ def test_east(session, direction_format, suffix):
     np.testing.assert_array_equal(length, [list(range(0, 70, 10))] * 5)
 
 
-def test_null(session):
-    """Null directions are null and break the flow path"""
-    tools = Tools(session=session)
-    tools.r_upflowlength(input="east_null", format="45degree", output="length")
+@pytest.mark.parametrize(
+    ("direction_format", "direction"),
+    [
+        ("45degree", "east_null"),
+        ("45degree", "east_zero_45degree"),
+        ("degree", "east_zero_degree"),
+        ("degree", "east_30_degree"),
+    ],
+)
+def test_no_direction(session, direction_format, direction):
+    """Cells without a direction are null and break the flow path
+
+    The null output for cells without a direction is the current
+    implementation, not documented.
+    """
+    tools = Tools(session=session, overwrite=True)
+    tools.r_upflowlength(input=direction, format=direction_format, output="length")
     length = read_with_nulls(session, "length")
     np.testing.assert_array_equal(length, [[0, 10, 20, np.nan, 0, 10, 20]] * 5)

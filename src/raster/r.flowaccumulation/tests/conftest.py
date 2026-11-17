@@ -35,12 +35,13 @@ def session(tmp_path_factory):
     """Session in a 5x7 XY project with direction and weight rasters.
 
     The rasters converging_45degree, converging_degree, and
-    converging_power2 have the same directions in different formats.
-    In east_45degree and east_degree, all cells point East, with negative
-    values in the east edge column as in r.watershed. In east_null, all
-    cells point East except for null cells in column 4. The weight raster
-    col_weight is the column number, null_weight is the same with null
-    cells in column 4.
+    converging_power2 have the same directions in different formats. In
+    east_45degree and east_degree, all cells point East, with negative
+    values in the east edge column as in r.watershed. In east_null,
+    east_zero_45degree, east_zero_degree, and east_30_degree, all cells
+    point East except for column 4, which is null or has a value meaning no
+    direction (0, 0, and 30). The weight raster col_weight is the column
+    number, null_weight is the same with null cells in column 4.
     """
     project = tmp_path_factory.mktemp("r_flowaccumulation") / "project"
     gs.create_project(project)
@@ -57,6 +58,9 @@ def session(tmp_path_factory):
             tools.r_mapcalc(expression="east_45degree = if(col() == 7, -8, 8)")
             tools.r_mapcalc(expression="east_degree = if(col() == 7, -360, 360)")
             tools.r_mapcalc(expression="east_null = if(col() == 4, null(), 8)")
+            tools.r_mapcalc(expression="east_zero_45degree = if(col() == 4, 0, 8)")
+            tools.r_mapcalc(expression="east_zero_degree = if(col() == 4, 0, 360)")
+            tools.r_mapcalc(expression="east_30_degree = if(col() == 4, 30, 360)")
             tools.r_mapcalc(expression="col_weight = col()")
             tools.r_mapcalc(expression="null_weight = if(col() == 4, null(), col())")
             yield session

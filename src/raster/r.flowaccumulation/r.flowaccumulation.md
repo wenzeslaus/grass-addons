@@ -15,6 +15,9 @@ The module recognizes three different formats of flow directions:
 
 ![image-alt](r_flowaccumulation_formats.png)
 
+A **degree** value below 45 in absolute value (e.g., 0) or a **45degree**
+value of 0 means no flow direction.
+
 Because it does not use elevation data (e.g., slope), flow accumulation
 is calculated by single flow direction (SFD) routing and may not be
 comparable to the result from multiple flow direction (MFD) routing.

@@ -14,6 +14,9 @@ The module recognizes three different formats of flow directions:
 
 ![image-alt](r_hydrobasin_formats.png)
 
+A **degree** value below 45 in absolute value (e.g., 0) or a **45degree**
+value of 0 means no flow direction.
+
 *r.watershed* can be used to create an input flow direction raster map.
 It can also create watersheds, but it uses an elevation map instead of a
 flow direction map, which is actually one of its outputs, and does not

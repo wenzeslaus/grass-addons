@@ -85,12 +85,15 @@ struct raster_map *read_direction(char *dir_name, char *format, char *encoding)
         case DIR_DEG:
             for (col = 0; col < ncols; col++)
                 if (!Rast_is_c_null_value(&dir_buf[col]))
-                    DIR(row, col) = pow(2, abs(dir_buf[col]) / 45.);
+                    DIR(row, col) = abs(dir_buf[col]) < 45
+                                        ? 0
+                                        : pow(2, 8 - abs(dir_buf[col]) / 45);
             break;
         case DIR_45DEG:
             for (col = 0; col < ncols; col++)
                 if (!Rast_is_c_null_value(&dir_buf[col]))
-                    DIR(row, col) = pow(2, 8 - abs(dir_buf[col]));
+                    DIR(row, col) =
+                        dir_buf[col] ? pow(2, 8 - abs(dir_buf[col])) : 0;
             break;
         case DIR_POW2:
             for (col = 0; col < ncols; col++)

@@ -10,16 +10,11 @@ import pytest
 import grass.script.array as garray
 from grass.tools import Tools
 
-MIRRORED_DEGREE = pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="degree format directions are converted incorrectly",
-)
 FORMATS = [
     ("45degree", "45degree"),
     ("auto", "45degree"),
-    pytest.param("degree", "degree", marks=MIRRORED_DEGREE),
-    pytest.param("auto", "degree", marks=MIRRORED_DEGREE),
+    ("degree", "degree"),
+    ("auto", "degree"),
 ]
 N = np.nan
 
@@ -61,6 +56,34 @@ def test_east(session, direction_format, suffix):
         output=np.array,
     )
     np.testing.assert_array_equal(watersheds, [[row] * 7 for row in range(1, 6)])
+
+
+@pytest.mark.parametrize(
+    ("direction_format", "direction"),
+    [
+        ("45degree", "east_zero_45degree"),
+        ("degree", "east_zero_degree"),
+        ("degree", "east_30_degree"),
+    ],
+)
+def test_no_direction(session, direction_format, direction):
+    """Cells without a direction are null and cut off the cells upstream of them
+
+    The null output for cells without a direction is the current
+    implementation, not documented.
+    """
+    tools = Tools(session=session)
+    output = f"watersheds_{direction}"
+    tools.r_hydrobasin(
+        direction=direction,
+        format=direction_format,
+        outlets="east_outlets",
+        output=output,
+    )
+    watersheds = read_with_nulls(session, output)
+    np.testing.assert_array_equal(
+        watersheds, [[N] * 4 + [row] * 3 for row in range(1, 6)]
+    )
 
 
 @pytest.mark.parametrize(

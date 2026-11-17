@@ -10,15 +10,10 @@ import pytest
 import grass.script.array as garray
 from grass.tools import Tools
 
-MIRRORED_DEGREE = pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="degree format directions are converted incorrectly",
-)
 FORMATS = [
     ("45degree", "45degree"),
-    pytest.param("degree", "degree", marks=MIRRORED_DEGREE),
-    pytest.param("auto", "degree", marks=MIRRORED_DEGREE),
+    ("degree", "degree"),
+    ("auto", "degree"),
 ]
 N = np.nan
 
@@ -32,8 +27,8 @@ def read_with_nulls(session, name):
     ("direction_format", "suffix", "flags", "accumulation_type"),
     [
         ("45degree", "45degree", "", "CELL"),
-        pytest.param("degree", "degree", "", "CELL", marks=MIRRORED_DEGREE),
-        pytest.param("auto", "degree", "", "CELL", marks=MIRRORED_DEGREE),
+        ("degree", "degree", "", "CELL"),
+        ("auto", "degree", "", "CELL"),
         ("power2", "power2", "", "CELL"),
         ("auto", "45degree", "", "CELL"),
         ("auto", "power2", "", "CELL"),
@@ -72,11 +67,24 @@ def test_east(session, direction_format, suffix):
     np.testing.assert_array_equal(accumulation, [[1, 2, 3, 4, 5, 6, 7]] * 5)
 
 
-def test_null(session):
-    """Null directions are null and break the flow path"""
+@pytest.mark.parametrize(
+    ("direction_format", "direction"),
+    [
+        ("45degree", "east_null"),
+        ("45degree", "east_zero_45degree"),
+        ("degree", "east_zero_degree"),
+        ("degree", "east_30_degree"),
+    ],
+)
+def test_no_direction(session, direction_format, direction):
+    """Cells without a direction are null and break the flow path
+
+    The null output for cells without a direction is the current
+    implementation, not documented.
+    """
     tools = Tools(session=session, overwrite=True)
     tools.r_flowaccumulation(
-        direction="east_null", format="45degree", output="accumulation"
+        direction=direction, format=direction_format, output="accumulation"
     )
     accumulation = read_with_nulls(session, "accumulation")
     np.testing.assert_array_equal(accumulation, [[1, 2, 3, N, 1, 2, 3]] * 5)
