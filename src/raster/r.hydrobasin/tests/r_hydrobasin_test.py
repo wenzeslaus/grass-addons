@@ -63,6 +63,24 @@ def test_east(session, direction_format, suffix):
     np.testing.assert_array_equal(watersheds, [[row] * 7 for row in range(1, 6)])
 
 
+@pytest.mark.parametrize("flags", ["", "m"])
+def test_null(session, flags):
+    """Null directions are null and cut off the cells upstream of them"""
+    tools = Tools(session=session)
+    output = f"watersheds_null{flags}"
+    tools.r_hydrobasin(
+        direction="east_null",
+        format="45degree",
+        outlets="east_outlets",
+        flags=flags,
+        output=output,
+    )
+    watersheds = read_with_nulls(session, output)
+    np.testing.assert_array_equal(
+        watersheds, [[N] * 4 + [row] * 3 for row in range(1, 6)]
+    )
+
+
 @pytest.mark.parametrize(
     ("column", "upstream_id", "downstream_id"), [("cat", 1, 2), ("id", 10, 20)]
 )

@@ -38,7 +38,8 @@ def session(tmp_path_factory):
     The rasters converging_45degree, converging_degree, and
     converging_power2 have the same directions in different formats.
     In east_45degree and east_degree, all cells point East, with negative
-    values in the east edge column as in r.watershed.
+    values in the east edge column as in r.watershed. In east_null, all
+    cells point East except for null cells in column 4.
 
     The outlets of converging_outlets are the west edge (category 1) and
     east edge (category 2) cells of row 3, those of east_outlets are the
@@ -60,6 +61,7 @@ def session(tmp_path_factory):
             )
             tools.r_mapcalc(expression="east_45degree = if(col() == 7, -8, 8)")
             tools.r_mapcalc(expression="east_degree = if(col() == 7, -360, 360)")
+            tools.r_mapcalc(expression="east_null = if(col() == 4, null(), 8)")
             tools.v_in_ascii(
                 input=StringIO("0.5|2.5\n6.5|2.5\n"), output="converging_outlets"
             )
