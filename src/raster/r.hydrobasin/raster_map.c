@@ -77,7 +77,7 @@ struct raster_map *read_direction(char *dir_name, char *format)
     dir_map->cell_size = Rast_cell_size(dir_map->type);
     dir_map->nrows = nrows;
     dir_map->ncols = ncols;
-    dir_map->cells.v = G_malloc(dir_map->cell_size * nrows * ncols);
+    dir_map->cells.v = G_calloc((size_t)nrows * ncols, dir_map->cell_size);
     dir_buf = G_malloc(dir_map->cell_size * ncols);
 
     for (row = 0; row < nrows; row++) {
