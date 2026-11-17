@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 import grass.script.array as garray
-from grass.tools import Tools
+from grass.tools import ToolError, Tools
 
 FORMATS = [
     ("45degree", "45degree"),
@@ -88,6 +88,24 @@ def test_no_direction(session, direction_format, direction):
     )
     accumulation = read_with_nulls(session, "accumulation")
     np.testing.assert_array_equal(accumulation, [[1, 2, 3, N, 1, 2, 3]] * 5)
+
+
+@pytest.mark.parametrize(
+    ("direction_format", "direction", "message"),
+    [
+        ("degree", "too_low_degree", "degrees cannot be < -360"),
+        ("auto", "too_low_degree", "degrees cannot be < -360"),
+        ("45degree", "too_low_45degree", "divided by 45 cannot be < -8"),
+        ("auto", "too_low_45degree", "divided by 45 cannot be < -8"),
+    ],
+)
+def test_out_of_range(session, direction_format, direction, message):
+    """Directions outside the valid range of the format are rejected"""
+    tools = Tools(session=session)
+    with pytest.raises(ToolError, match=message):
+        tools.r_flowaccumulation(
+            direction=direction, format=direction_format, output=np.array
+        )
 
 
 @pytest.mark.parametrize(

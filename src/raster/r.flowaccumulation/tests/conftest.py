@@ -40,8 +40,10 @@ def session(tmp_path_factory):
     values in the east edge column as in r.watershed. In east_null,
     east_zero_45degree, east_zero_degree, and east_30_degree, all cells
     point East except for column 4, which is null or has a value meaning no
-    direction (0, 0, and 30). The weight raster col_weight is the column
-    number, null_weight is the same with null cells in column 4.
+    direction (0, 0, and 30). In too_low_degree and too_low_45degree, the
+    west edge column is below the valid range of the format. The weight
+    raster col_weight is the column number, null_weight is the same with
+    null cells in column 4.
     """
     project = tmp_path_factory.mktemp("r_flowaccumulation") / "project"
     gs.create_project(project)
@@ -61,6 +63,8 @@ def session(tmp_path_factory):
             tools.r_mapcalc(expression="east_zero_45degree = if(col() == 4, 0, 8)")
             tools.r_mapcalc(expression="east_zero_degree = if(col() == 4, 0, 360)")
             tools.r_mapcalc(expression="east_30_degree = if(col() == 4, 30, 360)")
+            tools.r_mapcalc(expression="too_low_degree = if(col() == 1, -405, 360)")
+            tools.r_mapcalc(expression="too_low_45degree = if(col() == 1, -9, 8)")
             tools.r_mapcalc(expression="col_weight = col()")
             tools.r_mapcalc(expression="null_weight = if(col() == 4, null(), col())")
             yield session
