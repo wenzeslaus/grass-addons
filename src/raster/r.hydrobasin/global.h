@@ -46,7 +46,7 @@ void free_raster_map(struct raster_map *);
 void init_outlet_list(struct outlet_list *);
 void reset_outlet_list(struct outlet_list *);
 void free_outlet_list(struct outlet_list *);
-void add_outlet(struct outlet_list *, double, double, int);
+void add_outlet(struct outlet_list *, int, int, int);
 struct outlet_list *read_outlets(char *, char *, char *);
 
 /* delineate.c */

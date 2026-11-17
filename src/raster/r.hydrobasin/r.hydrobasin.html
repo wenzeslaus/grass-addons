@@ -8,6 +8,7 @@ Watershed Delineation (MESHED) OpenMP parallel algorithm by Cho (2025).
 
 <em>r.hydrobasin</em> uses a flow direction raster map and an outlets vector
 map to delineate a large number of watersheds in parallel using OpenMP.
+Outlets outside the computational region are skipped with a warning.
 
 <p>The module recognizes three different formats of flow directions:
 <div align="center">
