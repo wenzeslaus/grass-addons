@@ -81,3 +81,15 @@ def test_nested_outlets(session, column, upstream_id, downstream_id):
     expected = np.full((5, 7), N)
     expected[2] = [upstream_id] * 4 + [downstream_id] * 3
     np.testing.assert_array_equal(watersheds, expected)
+
+
+def test_long_flow_path(long_path_session):
+    """All cells of a single long flow path are in the outlet's watershed"""
+    tools = Tools(session=long_path_session)
+    watersheds = tools.r_hydrobasin(
+        direction="long_path_45degree",
+        format="45degree",
+        outlets="long_path_outlet",
+        output=np.array,
+    )
+    np.testing.assert_array_equal(watersheds, 1)

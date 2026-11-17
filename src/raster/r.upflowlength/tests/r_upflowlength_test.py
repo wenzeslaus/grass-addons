@@ -31,6 +31,13 @@ def read_with_nulls(session, name):
     return garray.array(name, null="nan", env=session.env)
 
 
+def long_path_order(size):
+    """Position of each cell along the path of long_path_45degree, starting at 0"""
+    order = np.arange(size * size).reshape(size, size)
+    order[1::2] = order[1::2, ::-1]
+    return order
+
+
 @pytest.mark.parametrize(
     ("direction_format", "suffix"),
     [
@@ -73,3 +80,12 @@ def test_null(session):
     tools.r_upflowlength(input="east_null", format="45degree", output="length")
     length = read_with_nulls(session, "length")
     np.testing.assert_array_equal(length, [[0, 10, 20, np.nan, 0, 10, 20]] * 5)
+
+
+def test_long_flow_path(long_path_session):
+    """Upstream flow length along a single long flow path is the path length"""
+    tools = Tools(session=long_path_session)
+    length = tools.r_upflowlength(
+        input="long_path_45degree", format="45degree", output=np.array
+    )
+    np.testing.assert_array_equal(length, long_path_order(len(length)))

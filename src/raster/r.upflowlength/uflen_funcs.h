@@ -183,124 +183,121 @@ static void trace_down(struct raster_map *dir_map
                        ,
                        int from_one, int row, int col, unsigned char dir)
 {
-    int next_row = row, next_col = col;
-    unsigned char next_dir = DIR_NULL;
-    FLEN_TYPE flen_up;
-    int nup;
+    do {
+        int next_row = row, next_col = col;
+        unsigned char next_dir = DIR_NULL;
+        FLEN_TYPE flen_up;
+        int nup;
 
 #ifdef USE_LEAST_MEMORY
-    FLEN_TYPE flen_dir;
+        FLEN_TYPE flen_dir;
 #endif
 
-    /* find the downstream cell */
-    switch (dir) {
-    case NW:
-        next_row--;
-        next_col--;
-        break;
-    case N:
-        next_row--;
-        break;
-    case NE:
-        next_row--;
-        next_col++;
-        break;
-    case W:
-        next_col--;
-        break;
-    case E:
-        next_col++;
-        break;
-    case SW:
-        next_row++;
-        next_col--;
-        break;
-    case S:
-        next_row++;
-        break;
-    case SE:
-        next_row++;
-        next_col++;
-        break;
-    }
+        /* find the downstream cell */
+        switch (dir) {
+        case NW:
+            next_row--;
+            next_col--;
+            break;
+        case N:
+            next_row--;
+            break;
+        case NE:
+            next_row--;
+            next_col++;
+            break;
+        case W:
+            next_col--;
+            break;
+        case E:
+            next_col++;
+            break;
+        case SW:
+            next_row++;
+            next_col--;
+            break;
+        case S:
+            next_row++;
+            break;
+        case SE:
+            next_row++;
+            next_col++;
+            break;
+        }
 
-    if (next_row >= 0 && next_row < nrows && next_col >= 0 &&
-        next_col < ncols) {
+        if (next_row >= 0 && next_row < nrows && next_col >= 0 &&
+            next_col < ncols) {
 #ifdef USE_LEAST_MEMORY
 #pragma omp atomic read seq_cst
-        flen_dir = FLEN(next_row, next_col);
-        /* if the downstream cell is done, stop tracing down */
-        if (flen_dir > 0)
-            return;
-        next_dir = (unsigned char)abs(flen_dir);
+            flen_dir = FLEN(next_row, next_col);
+            /* if the downstream cell is done, stop tracing down */
+            if (flen_dir > 0)
+                return;
+            next_dir = (unsigned char)abs(flen_dir);
 #else
-        next_dir = GET_DIR(next_row, next_col);
+            next_dir = GET_DIR(next_row, next_col);
 #endif
-    }
+        }
 
-    /* if the downstream cell is null, stop tracing down */
-    if (next_dir == DIR_NULL) {
-        if (from_one)
-            /* updating a terminal cell does not require atomicity because no
-             * other threads will check its value */
-            FLEN(row, col) +=
-                dir & ortho_dirs ? half_ortho_flen : half_dia_flen;
-        return;
-    }
+        /* if the downstream cell is null, stop tracing down */
+        if (next_dir == DIR_NULL) {
+            if (from_one)
+                /* updating a terminal cell does not require atomicity because
+                 * no other threads will check its value */
+                FLEN(row, col) +=
+                    dir & ortho_dirs ? half_ortho_flen : half_dia_flen;
+            return;
+        }
 
-    /* if any upstream cells of the downstream cell have never been visited,
-     * stop tracing down */
-    if (!(flen_up = max_up(
+        /* if any upstream cells of the downstream cell have never been visited,
+         * stop tracing down */
+        if (!(flen_up = max_up(
 #if defined USE_LESS_MEMORY || defined USE_LEAST_MEMORY
-              dir_map,
+                  dir_map,
 #endif
 #ifndef USE_LEAST_MEMORY
-              flen_map,
+                  flen_map,
 #endif
-              next_row, next_col, &nup)))
-        return;
-
-    /* only one thread should move to the next cell */
-    if (nup == 1) {
-#pragma omp atomic write seq_cst
-        FLEN(next_row, next_col) = flen_up;
-    }
-    else {
-        FLEN_TYPE expected = 0;
-
-        /* if the next cell is already owned by another thread, stop */
-#pragma omp atomic read seq_cst
-        expected = FLEN(next_row, next_col);
-        if (expected > 0)
+                  next_row, next_col, &nup)))
             return;
 
-        /* if the next cell is not owned yet by another thread, own it */
-#pragma omp atomic compare capture seq_cst
-        if (FLEN(next_row, next_col) == expected) {
+        /* only one thread should move to the next cell */
+        if (nup == 1) {
+#pragma omp atomic write seq_cst
             FLEN(next_row, next_col) = flen_up;
         }
         else {
-            /* otherwise, we need to check this value again because
-             * FLEN(next_row, next_col) could change between atomic read and
-             * atomic compare capture */
+            FLEN_TYPE expected = 0;
+
+            /* if the next cell is already owned by another thread, stop */
+#pragma omp atomic read seq_cst
             expected = FLEN(next_row, next_col);
+            if (expected > 0)
+                return;
+
+            /* if the next cell is not owned yet by another thread, own it */
+#pragma omp atomic compare capture seq_cst
+            if (FLEN(next_row, next_col) == expected) {
+                FLEN(next_row, next_col) = flen_up;
+            }
+            else {
+                /* otherwise, we need to check this value again because
+                 * FLEN(next_row, next_col) could change between atomic read and
+                 * atomic compare capture */
+                expected = FLEN(next_row, next_col);
+            }
+
+            /* at this point, if the current thread owned the next cell,
+             * expected <= 0; otherwise, expected > 0 */
+            if (expected > 0)
+                return;
         }
 
-        /* at this point, if the current thread owned the next cell, expected
-         * <= 0; otherwise, expected > 0 */
-        if (expected > 0)
-            return;
-    }
-
-    /* use gcc -O2 or -O3 flags for tail-call optimization
-     * (-foptimize-sibling-calls) */
-    trace_down(dir_map
-#ifndef USE_LEAST_MEMORY
-               ,
-               flen_map
-#endif
-               ,
-               from_one, next_row, next_col, next_dir);
+        /* continue with the downstream cell */
+        row = next_row;
+        col = next_col;
+        dir = next_dir;
+    } while (1);
 }
 
 /* if any upstream cells have never been visited, 0 is returned; otherwise, the
