@@ -66,3 +66,29 @@ def session(tmp_path_factory):
             )
             tools.v_in_ascii(input=StringIO("6.5|2.5\n"), output="east_outlet")
             yield session
+
+
+@pytest.fixture(scope="module")
+def long_path_session(tmp_path_factory):
+    """Session in a 500x500 XY project with a single long flow path.
+
+    In long_path_45degree, odd rows flow East and even rows flow West, and
+    the cells at the end of each row flow South, so the path snakes through
+    all cells, row by row, and leaves the region at the south-west corner.
+    The only outlet of long_path_outlet is the cell in that corner.
+    """
+    project = tmp_path_factory.mktemp("r_lfp_long_path") / "project"
+    gs.create_project(project)
+    with gs.setup.init(project, env=os.environ.copy()) as session:
+        with Tools(session=session) as tools:
+            # Long enough to overflow the stack if tracing recurses once per cell.
+            size = 500
+            tools.g_region(n=size, s=0, e=size, w=0, res=1)
+            tools.r_mapcalc(
+                expression=(
+                    "long_path_45degree = "
+                    f"if(row() % 2, if(col() == {size}, 6, 8), if(col() == 1, 6, 4))"
+                )
+            )
+            tools.v_in_ascii(input=StringIO("0.5|0.5\n"), output="long_path_outlet")
+            yield session

@@ -352,9 +352,7 @@ static TRACE_UP_RETURN trace_up(struct raster_map *dir_map, int row, int col,
                                 struct point_list *head_pl,
                                 struct cell_stack *up_stack)
 {
-#ifdef DONT_USE_TCO
     do {
-#endif
         int i;
         int nup = 0;
         int next_row = -1, next_col = -1;
@@ -444,25 +442,12 @@ static TRACE_UP_RETURN trace_up(struct raster_map *dir_map, int row, int col,
         }
 #endif
 
-#ifdef DONT_USE_TCO
+        /* continue with the next cell */
         row = next_row;
         col = next_col;
         down_northo += ortho;
         down_ndia += dia;
     } while (1);
-    /* XXX: work around an indent bug
-     * #else
-     * doesn't work */
-#endif
-#ifndef DONT_USE_TCO
-    /* use gcc -O2 or -O3 flags for tail-call optimization
-     * (-foptimize-sibling-calls) */
-#ifdef LOOP_THEN_TASK
-    return
-#endif
-        trace_up(dir_map, next_row, next_col, down_northo + ortho,
-                 down_ndia + dia, northo, ndia, lflen, head_pl, up_stack);
-#endif
 }
 
 static void find_full_lfp(struct raster_map *dir_map,

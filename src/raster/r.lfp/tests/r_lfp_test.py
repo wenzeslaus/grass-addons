@@ -4,6 +4,7 @@ SPDX-FileCopyrightText: 2026 Vaclav Petras
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 
+import csv
 import re
 
 import pytest
@@ -117,3 +118,25 @@ def test_null(session):
         nprocs=NPROCS,
     )
     assert flow_paths(tools, "lfp") == [((4.5, 2.5), (5.5, 2.5), (6.5, 2.5))]
+
+
+def test_long_flow_path(long_path_session, tmp_path):
+    """The longest flow path is the whole single long flow path"""
+    tools = Tools(session=long_path_session)
+    coordinates = tmp_path / "heads.csv"
+    # Use several threads because one thread splits tracing into a task per
+    # cell. Write coordinates, not lfp, which the data race at NPROCS affects.
+    tools.r_lfp(
+        direction="long_path_45degree",
+        format="45degree",
+        outlets="long_path_outlet",
+        coordinates=coordinates,
+        nprocs=2,
+    )
+    with coordinates.open() as file:
+        heads = list(csv.DictReader(file))
+    region = tools.g_region(flags="p", format="json")
+    assert len(heads) == 1
+    assert float(heads[0]["x"]) == pytest.approx(region["west"] + 0.5)
+    assert float(heads[0]["y"]) == pytest.approx(region["north"] - 0.5)
+    assert float(heads[0]["length"]) == pytest.approx(region["cells"] - 1)
